@@ -1,1 +1,1 @@
-# RAG-Langchain-Chatbot
+# RAG-Langchain-Chatbot Demo Project
