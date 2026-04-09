@@ -52,6 +52,7 @@ def query():
     model = ChatOpenAI()
     response_text = model.predict(prompt)
 
+
     sources = [{"source": doc.metadata.get("source"), "page": doc.metadata.get("page"), "chunk_index": doc.metadata.get("start_index")} for doc, _score in results]
     
     session['response'] = response_text

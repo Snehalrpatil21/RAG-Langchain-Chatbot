@@ -11,11 +11,11 @@ from dotenv import load_dotenv
 import os
 import shutil
 
-# Load environment variables. Assumes that project contains .env file with API keys
+# Load environment variables(.env file with API keys)
 load_dotenv()
 #---- Set OpenAI API key 
 # Change environment variable name from "OPENAI_API_KEY" to the name given in 
-# your .env file.
+# .env file.
 openai.api_key = os.environ['OPENAI_API_KEY']
 
 CHROMA_PATH = "chroma"
@@ -31,23 +31,26 @@ def generate_data_store():
     chunks = split_text(documents)
     save_to_chroma(chunks)
 
+# Load the documents
 
 def load_documents():
     loader = PyPDFDirectoryLoader(DATA_PATH)
     documents = loader.load()
     return documents
 
+# Split the documents
 
 def split_text(documents: list[Document]):
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=1000,
-        chunk_overlap=500,
+        chunk_size=800,
+        chunk_overlap=160,
         length_function=len,
         add_start_index=True,
     )
     chunks = text_splitter.split_documents(documents)
     print(f"Split {len(documents)} documents into {len(chunks)} chunks.")
 
+    #Debug o/p for 1 chuck 
     if len(chunks) > 10:
         document = chunks[10]
         print(document.page_content)

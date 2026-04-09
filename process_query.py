@@ -52,7 +52,7 @@ def main():
     response_text = model.predict(prompt)
 
     sources = [{"source": doc.metadata.get("source"), "page": doc.metadata.get("page"), "chunk_index": doc.metadata.get("start_index")} for doc, _score in results]
-    formatted_sources = [f"{s['source']} (page: {s['page']}, chunk: {s['chunk_index']})" for s in sources]
+    formatted_sources = [f"{s['source']} (page: {s['page']})" for s in sources]
     formatted_response = f"Response: {response_text}\nSources: {formatted_sources}"
     print(formatted_response)
 
