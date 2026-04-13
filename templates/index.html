@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAG Chatbot</title>
+    <title>Ask 10K</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +11,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>RAG-Langchain-Chatbot</h1>
+        <h1>ASK 10K</h1>
         <form action="/query" method="post">
             <label for="query">Enter your query:</label>
             <input type="text" id="query" name="query" required>
@@ -19,6 +19,10 @@
         </form>
         {% if response %}
             <div class="response">
+                {% if current_question %}
+                    <h2>Question:</h2>
+                    <p>{{ current_question }}</p>
+                {% endif %}
                 <h2>Response:</h2>
                 <p>{{ response }}</p>
                 <h2>Sources:</h2>
@@ -40,6 +44,23 @@
                 </table>
             </div>
         {% endif %}
+        
+        {% if history %}
+            <div class="history">
+                <h2>Chat History (Last 5):</h2>
+                {% for item in history | reverse %}
+                    <div class="qa-pair">
+                        <p><strong>Question:</strong> {{ item.question }}</p>
+                        <p><strong>Answer:</strong> {{ item.answer }}</p>
+                        {% if item.sources %}
+                            <p><strong>Sources:</strong> {% for source in item.sources %}{{ source.source }} ({{ source.page }}){% if not loop.last %}, {% endif %}{% endfor %}</p>
+                        {% endif %}
+                    </div>
+                    {% if not loop.last %}<hr>{% endif %}
+                {% endfor %}
+            </div>
+        {% endif %}
+
     </div>
     <div id="loading" style="display: none;">
         <div class="loading-content">

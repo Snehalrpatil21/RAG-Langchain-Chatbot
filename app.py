@@ -28,7 +28,9 @@ app.secret_key = 'your_secret_key_here'  # Change this to a random secret key
 def index():
     response = session.pop('response', None)
     sources = session.pop('sources', None)
-    return render_template('index.html', response=response, sources=sources)
+    current_question = session.pop('current_question', None)
+    history = session.get('history', [])
+    return render_template('index.html', response=response, sources=sources, current_question=current_question, history=history)
 
 @app.route('/query', methods=['POST'])
 def query():
@@ -41,22 +43,25 @@ def query():
     # Search the DB.
     results = db.similarity_search_with_relevance_scores(query_text, k=3)
     if len(results) == 0 or results[0][1] < 0.7:
-        session['response'] = "Unable to find matching results."
-        session['sources'] = []
-        return redirect(url_for('index'))
-
-    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    prompt = prompt_template.format(context=context_text, question=query_text)
-
-    model = ChatOpenAI()
-    response_text = model.predict(prompt)
-
-
-    sources = [{"source": doc.metadata.get("source"), "page": doc.metadata.get("page"), "chunk_index": doc.metadata.get("start_index")} for doc, _score in results]
+        response_text = "Unable to find matching results."
+        sources = []
+    else:
+        context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+        prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+        prompt = prompt_template.format(context=context_text, question=query_text)
+        
+        model = ChatOpenAI(model_name="gpt-4", temperature=0)
+        response_text = model.predict(prompt)
+        sources = [{"source": doc.metadata.get("source"), "page": doc.metadata.get("page"), "chunk_index": doc.metadata.get("start_index")} for doc, _score in results]
+    
+    # Update history: append new Q&A and keep only last 5
+    history = session.get('history', [])
+    history.append({'question': query_text, 'answer': response_text, 'sources': sources})
+    session['history'] = history[-5:]  # Keep only the last 5
     
     session['response'] = response_text
     session['sources'] = sources
+    session['current_question'] = query_text
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
