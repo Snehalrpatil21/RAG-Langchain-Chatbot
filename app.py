@@ -18,7 +18,11 @@ Answer the question based only on the following context:
 
 ---
 
-Answer the question based on the above context: {question}
+Use the previous conversation history to answer this follow-up question.
+
+{history}
+
+Answer the question based on the above context and history: {question}
 """
 
 app = Flask(__name__)
@@ -41,15 +45,27 @@ def query():
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
     # Search the DB.
-    results = db.similarity_search_with_relevance_scores(query_text, k=3)
+    history = session.get('history', [])
+    search_query = query_text
+    if history:
+        recent_history = history[-3:]
+        history_context = "\n".join([f"Q: {item['question']}\nA: {item['answer']}" for item in recent_history])
+        rewrite_prompt = f"Given the conversation history:\n{history_context}\n\nRewrite this follow-up question into a standalone query that can be searched in a document database: '{query_text}'"
+        rewrite_model = ChatOpenAI(model_name="gpt-4", temperature=0)
+        search_query = rewrite_model.predict(rewrite_prompt).strip()
+
+    results = db.similarity_search_with_relevance_scores(search_query, k=3)
     if len(results) == 0 or results[0][1] < 0.7:
         response_text = "Unable to find matching results."
         sources = []
     else:
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
+        history = session.get('history', [])
+        history_text = "\n\n".join([f"Q: {item['question']}\nA: {item['answer']}" for item in history]) if history else "No prior conversation history."
+
         prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-        prompt = prompt_template.format(context=context_text, question=query_text)
-        
+        prompt = prompt_template.format(context=context_text, history=history_text, question=query_text)
+
         model = ChatOpenAI(model_name="gpt-4", temperature=0)
         response_text = model.predict(prompt)
         sources = [{"source": doc.metadata.get("source"), "page": doc.metadata.get("page"), "chunk_index": doc.metadata.get("start_index")} for doc, _score in results]
