@@ -22,7 +22,7 @@ Use the previous conversation history to answer this follow-up question.
 
 {history}
 
-Answer the question based on the above context and history: {question}
+Answer the question based on the above context and history: {question}. if you don't get the answer or need more context please ask for more information
 """
 
 app = Flask(__name__)
